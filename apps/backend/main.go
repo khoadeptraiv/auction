@@ -4,9 +4,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 
 	"auction-app/auction"
@@ -26,20 +29,35 @@ func main() {
 	log.Println("🚀 Starting Auction App...")
 
 	// Initialize shared database
-	// Updated to use MySQL
-	database, err := db.ConnectMysql()
+	// Updated to use PostgreSQL for Render Free Tier
+	database, err := db.ConnectPostgres()
 	if err != nil {
-		log.Fatal("❌ Failed to connect to MySQL:", err)
+		log.Fatal("❌ Failed to connect to Postgres:", err)
 	}
 	defer database.Close()
-	log.Println("✅ Connected to MySQL")
+	log.Println("✅ Connected to Postgres")
 
 	// Initialize Redis
 	rdb := db.ConnectRedis()
 	log.Println("✅ Connected to Redis")
 
+	// Start Embedded NATS Server
+	ns, err := server.NewServer(&server.Options{
+		Host: "0.0.0.0",
+		Port: 4222,
+	})
+	if err != nil {
+		log.Fatal("❌ Failed to create NATS server:", err)
+	}
+	go ns.Start()
+	log.Println("✅ Embedded NATS Server started on :4222")
+
+	if !ns.ReadyForConnections(5 * time.Second) {
+		log.Fatal("❌ NATS server not ready")
+	}
+
 	// Initialize NATS
-	nc, err := db.ConnectNATS()
+	nc, err := nats.Connect("nats://localhost:4222")
 	if err != nil {
 		log.Fatal("❌ Failed to connect to NATS:", err)
 	}
@@ -63,7 +81,21 @@ func main() {
 	go auction.StartServer(database, nc, ":8082")
 	go bidding.StartServer(database, rdb, nc, ":8083")
 	go notify.StartServer(notifyHub, ":8084")
-	go gateway.StartServer(":8080")
+	go notify.StartServer(notifyHub, ":8084")
+
+	// Gateway listens on PORT (Render requirement) or defaults to 8080
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	// Gateway expects ":port" format if it doesn't handle it internally?
+	// Checking gateway.StartServer signature: func StartServer(port string)
+	// It's called as gateway.StartServer(":8080") previously.
+	// So we should prepend ":" if it's just a number, or just pass ":" + port
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
+	go gateway.StartServer(port)
 
 	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	log.Println("🎉 All services started successfully!")

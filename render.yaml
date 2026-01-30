@@ -1,0 +1,64 @@
+services:
+  # Frontend - Static Site
+  - type: web
+    name: auction-web
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    rootDir: apps/web
+    envVars:
+      - key: VITE_API_URL
+        value: https://auction-backend.onrender.com # You might need to update this after backend is deployed
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+
+  - type: web
+    # ... (other fields)
+    plan: free # Explicitly request Free plan if available (Render defaults to starter often)
+    name: auction-backend
+    runtime: docker
+    rootDir: . # Context at root to access all apps/backend files
+    dockerfilePath: apps/backend/Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DATABASE_URL
+        fromDatabase:
+          name: auction-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: auction-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+  # Database - PostgreSQL (Managed)
+  - type: pserv
+    name: auction-db
+    runtime: image
+    image:
+      url: postgres:15
+    disk:
+      name: postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+    envVars:
+      - key: POSTGRES_USER
+        value: auction
+      - key: POSTGRES_DB
+        value: auction_db
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # Cache - Redis (Managed)
+  - type: redis
+    name: auction-redis
+    ipAllowList: [] # internal only

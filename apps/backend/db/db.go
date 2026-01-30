@@ -2,22 +2,22 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 )
 
-func ConnectMysql() (*sql.DB, error) {
+// ConnectPostgres connects to PostgreSQL database
+func ConnectPostgres() (*sql.DB, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		// Log warning but don't hardcode sensitive defaults for production code
-		// Fallback only if absolutely necessary for local dev without env
-		// databaseURL = "auction:auction123@tcp(localhost:3306)/auction_db?parseTime=true"
 	}
 
-	db, err := sql.Open("mysql", databaseURL)
+	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -29,9 +29,9 @@ func ConnectMysql() (*sql.DB, error) {
 	return db, nil
 }
 
-// Kept for backward compatibility if needed, but redirects to MySQL
-func ConnectPostgres() (*sql.DB, error) {
-	return ConnectMysql()
+// Deprecated: Migrated to Postgres
+func ConnectMysql() (*sql.DB, error) {
+	return nil, fmt.Errorf("MySQL is deprecated, use Postgres")
 }
 
 func ConnectRedis() *redis.Client {
@@ -47,6 +47,16 @@ func ConnectRedis() *redis.Client {
 
 func ConnectNATS() (*nats.Conn, error) {
 	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		natsHost := os.Getenv("NATS_HOST")
+		natsPort := os.Getenv("NATS_PORT")
+		if natsHost != "" {
+			if natsPort == "" {
+				natsPort = "4222"
+			}
+			natsURL = fmt.Sprintf("nats://%s:%s", natsHost, natsPort)
+		}
+	}
 	if natsURL == "" {
 		natsURL = nats.DefaultURL
 	}
