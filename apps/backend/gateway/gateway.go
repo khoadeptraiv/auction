@@ -22,8 +22,8 @@ func StartServer(port string) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"*"}, // * conflicting with AllowCredentials
-		AllowedOrigins:   []string{"https://*.onrender.com", "http://localhost:*"},
+		// Add specific frontend domain to be safe
+		AllowedOrigins:   []string{"https://auction-web-3aym.onrender.com", "https://*.onrender.com", "http://localhost:*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
