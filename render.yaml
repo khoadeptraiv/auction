@@ -12,7 +12,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://auction-backend.onrender.com
+        value: https://auction-backend.onrender.com/api
       - key: VITE_CLERK_PUBLISHABLE_KEY
         sync: false
 

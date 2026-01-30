@@ -37,6 +37,7 @@ func StartServer(port string) {
 	userURL := "http://localhost:8081"
 	auctionURL := "http://localhost:8082"
 	biddingURL := "http://localhost:8083"
+	notifyURL := "http://localhost:8084"
 
 	// Public routes
 	r.Post("/api/auth/register", proxyTo(userURL, "/auth/register"))
@@ -44,6 +45,8 @@ func StartServer(port string) {
 	r.Get("/api/auctions", proxyTo(auctionURL, "/auctions"))
 	r.Get("/api/auctions/active", proxyTo(auctionURL, "/auctions/active"))
 	r.Get("/api/auctions/{id}", proxyToWithID(auctionURL, "/auctions/"))
+	// WebSocket route for notifications
+	r.HandleFunc("/ws", proxyTo(notifyURL, "/ws"))
 
 	// Protected routes - with Clerk JWT verification
 	r.Group(func(r chi.Router) {

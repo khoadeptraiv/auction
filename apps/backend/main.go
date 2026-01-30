@@ -37,6 +37,11 @@ func main() {
 	defer database.Close()
 	log.Println("✅ Connected to Postgres")
 
+	// Run Database Migrations
+	if err := db.MigratePostgres(database); err != nil {
+		log.Printf("⚠️  Migration failed (non-critical if tables exist): %v", err)
+	}
+
 	// Initialize Redis
 	rdb := db.ConnectRedis()
 	log.Println("✅ Connected to Redis")
