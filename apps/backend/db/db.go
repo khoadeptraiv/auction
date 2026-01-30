@@ -40,6 +40,16 @@ func ConnectRedis() *redis.Client {
 		redisURL = "localhost:6379"
 	}
 
+	// If REDIS_URL starts with redis:// or rediss://, use ParseURL
+	if len(redisURL) > 8 && (redisURL[:8] == "redis://" || redisURL[:9] == "rediss://") {
+		opts, err := redis.ParseURL(redisURL)
+		if err != nil {
+			fmt.Printf("❌ Failed to parse REDIS_URL: %v\n", err)
+			// Fallback or exit? For now, try to continue but likely fail
+		}
+		return redis.NewClient(opts)
+	}
+
 	return redis.NewClient(&redis.Options{
 		Addr: redisURL,
 	})
