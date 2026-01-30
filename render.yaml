@@ -1,18 +1,16 @@
 services:
-  # 1. Frontend - Chuyển sang type: static (Luôn miễn phí, không bao giờ tốn tiền)
-  - type: static
+  # Frontend - Cấu hình đúng cho Static Site
+  - type: web              # PHẢI là web
     name: auction-web
+    runtime: static        # Đây mới là chỗ để xác định nó là Static Site
+    plan: free
     buildCommand: npm install && npm run build
-    staticPublishPath: apps/web/dist # Đường dẫn sau build
+    staticPublishPath: apps/web/dist 
+    rootDir: apps/web
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://auction-backend.onrender.com
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false
 
   # 2. Backend - Phải dùng Runtime ngôn ngữ (ví dụ Node) thay vì Docker để dùng gói Free
   - type: web
