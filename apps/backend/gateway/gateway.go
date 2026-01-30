@@ -82,7 +82,8 @@ func clerkAuth(next http.Handler) http.Handler {
 		// For simplicity in development, we also support custom JWT
 		secret := os.Getenv("JWT_SECRET")
 		if secret == "" {
-			return nil, errors.New("JWT_SECRET not set")
+			http.Error(w, "JWT_SECRET not set", http.StatusInternalServerError)
+			return
 		}
 
 		// Try to parse as custom JWT first
@@ -163,7 +164,6 @@ func getClerkUserInfo(clerkUserID string) (*ClerkUserInfo, error) {
 	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
 	if clerkSecretKey == "" {
 		return nil, nil
-	}
 	}
 
 	req, _ := http.NewRequest("GET", "https://api.clerk.com/v1/users/"+clerkUserID, nil)
